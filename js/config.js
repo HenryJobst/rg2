@@ -11,6 +11,7 @@
     TAB_CREATE: 5,
     TAB_EDIT: 6,
     TAB_MAP: 7,
+    TAB_DELETE_MAP: 8,
     INVALID_MAP_ID: 9999,
     // translated when output so leave as English here
     DEFAULT_NEW_COMMENT: "Type your comment",
@@ -28,6 +29,8 @@
     PURPLE: '#b300ff',
     RED: '#ff0000',
     GREEN: '#00ff00',
+    DARK_GREEN: 'rgb(34, 139, 34)',
+    DARK_GREEN_30: 'rgba(34, 139, 34, 0.3)',
     GREY: '#e0e0e0',
     RED_30: 'rgba(255,0,0,0.3)',
     GREEN_30: 'rgba(0,255,0,0.3)',
@@ -40,7 +43,7 @@
     DIM: 0.75,
     FULL_INTENSITY: 1.0,
      // version gets set automatically by grunt file during build process
-    RG2VERSION: '1.6.3',
+    RG2VERSION: '1.10.1',
     TIME_NOT_FOUND: 9999,
     // values for evt.which
     RIGHT_CLICK: 3,
@@ -51,6 +54,9 @@
     FORMAT_SCORE_EVENT: 3,
     FORMAT_SCORE_EVENT_NO_RESULTS: 4,
     DISPLAY_ALL_COURSES: 99999,
+    EXCLUDED_NONE: 0,
+    EXCLUDED_ZERO_SPLITS: 1,
+    EXCLUDED_REAL_SPLITS: 2,
     //number of drawn routes that can be saved for possible later deletion
     MAX_DRAWN_ROUTES: 10,
     // array of available languages: not great to do it like this but it helps for routegadget.co.uk set-up
@@ -65,7 +71,10 @@
       { language: "Русский", code: "ru" }
     ],
     // Size of map upload in MB that triggers the warning dialog
-    FILE_SIZE_WARNING: 2
+    FILE_SIZE_WARNING: 2,
+    // Size of map upload in pixels that triggers the warning dialog
+    // emprically this is easily enough for an A3 sensible map
+    PIXEL_SIZE_WARNING: 4000
   };
 
   options = {
@@ -112,8 +121,8 @@
   function translateTitleProperties() {
     var i, selector, text;
     selector = ["rg2-replay-start-control", "#rg2-hide-info-panel-icon", '#btn-about', '#btn-options', '#btn-zoom-out', '#btn-zoom-in', '#btn-reset', '#btn-show-splits', '#rg2-splits-table', '#btn-slower',
-      '#btn-faster', '#btn-rotate-right', '#btn-rotate-left', '#btn-stats'];
-    text = ["Start at", "Hide info panel", 'Help', 'Options', 'Zoom out', 'Zoom in', 'Reset', 'Splits', 'Splits table', 'Slower', 'Faster', 'Rotate right', 'Rotate left', 'Statistics'];
+      '#btn-faster', '#btn-rotate-right', '#btn-rotate-left', '#btn-stats', '#btn-measure'];
+    text = ["Start at", "Hide info panel", 'Help', 'Options', 'Zoom out', 'Zoom in', 'Reset', 'Splits', 'Splits table', 'Slower', 'Faster', 'Rotate right', 'Rotate left', 'Statistics', 'Measure'];
     for (i = 0; i < selector.length; i += 1) {
       $(selector[i]).prop('title', t(text[i]));
     }

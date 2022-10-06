@@ -5,6 +5,9 @@
     this.display = false;
     this.courseid = data.courseid;
     this.codes = data.codes;
+    this.setExcluded(data);
+    this.filterTo = this.codes.length;
+    this.filterFrom = 0;
     this.x = data.xpos;
     this.y = data.ypos;
     this.isScoreCourse = isScoreCourse;
@@ -22,6 +25,24 @@
 
     incrementTracksCount : function () {
       this.trackcount += 1;
+    },
+
+    setExcluded: function (data) {
+      this.excludeType = data.excludeType;
+      this.exclude = data.codes.map((control, i) => {
+        if (data.exclude.findIndex(ex => ex === i) > -1) {
+          return true;
+        } else {
+          return false;
+        }
+      });
+      this.allowed = data.codes.map((control, i) => {
+        if (data.exclude.findIndex(ex => ex === i) > -1) {
+          return data.allowed[data.exclude.findIndex(ex => ex === i)];
+        } else {
+          return 0;
+        }
+      });
     },
 
     setLength : function () {
@@ -90,7 +111,8 @@
         rg2.controls.drawStart(this.x[0], this.y[0], "", this.angle[0], opt);
         // don't join up controls for score events
         if (!this.isScoreCourse) {
-          this.drawLinesBetweenControls({x: this.x, y: this.y}, this.angle, opt);
+          const filter = {from: this.filterFrom, to: this.filterTo};
+          this.drawLinesBetweenControls({x: this.x, y: this.y}, this.angle, opt, filter);
         }
         if (this.isScoreCourse) {
           for (i = 1; i < (this.x.length); i += 1) {
@@ -102,16 +124,19 @@
           }
 
         } else {
-          for (i = 1; i < (this.x.length - 1); i += 1) {
+          // don't want to draw an extra circle round the start or finish
+          let from = Math.max(this.filterFrom, 1);
+          let to = Math.min(this.filterTo + 1, this.x.length - 1);
+          for (i = from; i < to; i += 1) {
             rg2.controls.drawSingleControl(this.x[i], this.y[i], i, this.textAngle[i], opt);
           }
           rg2.controls.drawFinish(this.x[this.x.length - 1], this.y[this.y.length - 1], "", opt);
         }
       }
     },
-    drawLinesBetweenControls : function (pt, angle, opt) {
-      var c1x, c1y, c2x, c2y, i, dist;
-      for (i = 0; i < (pt.x.length - 1); i += 1) {
+    drawLinesBetweenControls : function (pt, angle, opt, filter) {
+      var c1x, c1y, c2x, c2y, dist;
+      for (let i = filter.from; i < filter.to; i += 1) {
         if (i === 0) {
           dist = opt.startTriangleLength;
         } else {

@@ -45,6 +45,15 @@
       return this.courses[courseid];
     },
 
+    getVariantDetails: function (variant) {
+      for (let i = 0; i < this.courses.length; i += 1) {
+        if (this.courses[i].variant === variant) {
+          return this.courses[i];
+        }
+      }
+      return undefined;
+    },
+
     getCourseLegLengths: function (courseid) {
       return this.courses[courseid].getLegLengths();
     },
@@ -115,36 +124,56 @@
     putOnDisplay: function (courseid) {
       if (this.courses[courseid] !== undefined) {
         this.courses[courseid].display = true;
+        this.setFilter(courseid);
       }
     },
 
     putAllOnDisplay: function () {
-      this.setDisplayAllCourses(true);
+      for (let i = 0; i < this.courses.length; i += 1) {
+        if (this.courses[i] !== undefined) {
+            this.putOnDisplay(this.courses[i].courseid);
+        }
+      }
     },
 
     removeAllFromDisplay: function () {
-      this.setDisplayAllCourses(false);
-    },
-
-    setDisplayAllCourses: function (doDisplay) {
-      var i;
-      for (i = 0; i < this.courses.length; i += 1) {
+      for (let i = 0; i < this.courses.length; i += 1) {
         if (this.courses[i] !== undefined) {
-          this.courses[i].display = doDisplay;
+            this.removeFromDisplay(this.courses[i].courseid);
         }
       }
     },
 
     removeFromDisplay: function (courseid) {
-      // remove selected course
-      this.courses[courseid].display = false;
+      if (this.courses[courseid] !== undefined) {
+        this.courses[courseid].display = false;
+        this.setFilter(courseid);
+      }
+    },
 
+    setFilter: function (courseid) {
+      // may come in as string or integer
+      courseid = parseInt(courseid, 10)
+      // assumes display properties set on courses and results before this call
+      const display = this.courses[courseid].display || rg2.results.anyTracksForCourseDisplayed(courseid);
+      document.querySelectorAll("[data-filter]").forEach(div => {
+        if (parseInt(div.dataset.courseId, 10) === courseid) {
+          div.dataset.filter = display;
+        }
+      });
+    },
+
+    setAllFilters: function () {
+      for (let i = 0; i < this.courses.length; i += 1) {
+        if (this.courses[i] !== undefined) {
+          this.setFilter(i);
+        }
+      }
     },
 
     getCoursesOnDisplay: function () {
-      var i, courses;
-      courses = [];
-      for (i = 0; i < this.courses.length; i += 1) {
+      const courses = [];
+      for (let i = 0; i < this.courses.length; i += 1) {
         if (this.courses[i] !== undefined) {
           if (this.courses[i].display) {
             courses.push(i);
@@ -152,6 +181,17 @@
         }
       }
       return courses;
+    },
+
+    allCoursesDisplayed: function () {
+      for (let i = 0; i < this.courses.length; i += 1) {
+        if (this.courses[i] !== undefined) {
+          if (!this.courses[i].display) {
+            return false;
+          }
+        }
+      }
+      return true;
     },
 
     getNumberOfCourses: function () {
@@ -208,7 +248,7 @@
       details = this.formatCourseDetails();
       // add bottom row for all courses checkboxes
       html += details.html + "<tr class='allitemsrow'><td>" + rg2.t("All") + "</td>";
-      html += "<td><input class='allcourses' id=" + details.coursecount + " type=checkbox name=course></input></td>";
+      html += "<td><input class='showallcourses' id=" + details.coursecount + " type=checkbox name=course></input></td>";
       html += "<td>" + details.res + "</td><td>" + this.totaltracks + "</td><td>";
       if (this.totaltracks > 0) {
         html += "<input id=" + details.coursecount + " class='alltracks' type=checkbox name=track></input>";
@@ -218,15 +258,15 @@
     },
 
     formatCourseDetails: function () {
-      var i, details;
-      details = { html: "", res: 0 };
+      let details = { html: "", res: 0 };
+      let i;
       for (i = 0; i < this.courses.length; i += 1) {
         if (this.courses[i] !== undefined) {
-          details.html += "<tr><td>" + this.courses[i].name + "</td>" + "<td><input class='courselist' id=" + i + " type=checkbox name=course></input></td>";
+          details.html += "<tr><td>" + this.courses[i].name + "</td>" + "<td><input class='showcourse' id=" + i + " type=checkbox name=course></input></td>";
           details.html += "<td>" + this.courses[i].resultcount + "</td>" + "<td>" + this.courses[i].trackcount + "</td><td>";
           details.res += this.courses[i].resultcount;
           if (this.courses[i].trackcount > 0) {
-            details.html += "<input id=" + i + " class='tracklist' type=checkbox name=track></input></td>";
+            details.html += "<input id=" + i + " class='allcoursetracks' type=checkbox name=track></input></td>";
             details.html += "<td><input id=" + i + " class='allcoursetracksreplay' type=checkbox name=replay></input>";
           } else {
             details.html += "</td><td>";
@@ -238,8 +278,79 @@
       return details;
     },
 
-    drawLinesBetweenControls: function (pt, angle, courseid, opt) {
-      this.courses[courseid].drawLinesBetweenControls(pt, angle, opt);
+    formatCourseFilters: function () {
+      let details = "";    
+      for (let i = 0; i < this.courses.length; i += 1) {
+        if (this.courses[i] !== undefined) {
+          // only filter for normal events with at least one control as well as start and finish
+          if ((!this.courses[i].isScoreCourse) && (this.courses[i].codes.length > 2)) {
+            details += "<div class='filter-item' data-course-id=" + this.courses[i].courseid + " data-filter='false'>" + this.courses[i].name;
+            details += "</div><div class='filter-item' data-course-id=" + this.courses[i].courseid + " data-filter='false' id='course-filter-";
+            details += this.courses[i].courseid + "'></div>";
+          }
+        }
+      }
+      return details;
+    },
+
+    formatFilterSliders: function () {
+      for (let i = 0; i < this.courses.length; i += 1) {
+        if (this.courses[i] !== undefined) {
+          let self = this;
+          $("#course-filter-" + this.courses[i].courseid).slider({
+            range: true,
+            min: 0,
+            max: this.courses[i].codes.length,
+            values: [0, this.courses[i].codes.length],
+            slide: function (event, ui) {
+              self.filterChanged(i, ui.values[0], ui.values[1]);
+            }
+          })
+        }
+      }
+    },
+
+    drawLinesBetweenControls: function (pt, angle, courseid, opt, filter) {
+      this.courses[courseid].drawLinesBetweenControls(pt, angle, opt, filter);
+    },
+
+    getFilterDetails: function (courseid) {
+      const filter = {};
+      filter.filterFrom = this.courses[courseid].filterFrom;
+      filter.filterTo = this.courses[courseid].filterTo;
+      return filter;
+    },
+
+    // slider callback
+    filterChanged: function (courseid, low, high) {
+      this.courses[courseid].filterFrom = low;
+      this.courses[courseid].filterTo = high;
+      rg2.redraw(false);
+    },
+
+    getExcluded: function (courseid) {
+      if (rg2.events.isScoreEvent()) {
+        return [];
+      }
+      return this.courses[courseid].exclude;
+    },
+
+    getExcludedText: function () {
+      // recreates excluded_* text file contents
+      // courseid|type|control,time|...
+      let text = "";
+      for (let i = 0; i < this.courses.length; i += 1) {
+        if (this.courses[i] !== undefined) {
+          if (this.courses[i].excludeType !== rg2.config.EXCLUDED_NONE) {
+            text = text + this.courses[i].courseid + "|" + this.courses[i].excludeType;
+            text = text + this.courses[i].exclude.reduce((accum, exclude, index) => { 
+              return exclude ? accum + "|" + index + "," + this.courses[i].allowed[index]: accum;
+            }, "")
+            text = text + "\n";
+          }
+        }
+      }
+      return text;
     }
   };
   rg2.Courses = Courses;

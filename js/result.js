@@ -12,6 +12,7 @@
     if ((this.time === "00") || (this.time === "0")) {
       this.time = "";
     }
+    this.timeInSecs = data.secs;
     this.position = data.position;
     this.status = data.status;
     this.canDelete = false;
@@ -29,8 +30,8 @@
       this.coursename = data.courseid.toString();
     }
     this.courseid = data.courseid;
+    this.variant = data.variant;
     this.splits = this.adjustRawSplits(data.splits);
-
     if (isScoreEvent) {
       // save control locations for score course result
       this.scorex = scorex;
@@ -88,6 +89,9 @@
           rawSplits[i] = rawSplits[i - 1];
         }
       }
+      // for some excluded events the finish split is unadjusted (bug in results system?)
+      // so safer to copy in running time
+      rawSplits[rawSplits.length - 1] = this.timeInSecs;
       return rawSplits;
     },
 
@@ -133,51 +137,68 @@
       }
     },
 
-    drawTrack: function () {
-      var i, l, oldx, oldy, stopCount;
-      if (this.displayTrack) {
-        if (this.isGPSTrack && rg2.options.showGPSSpeed && (this.speedColour.length === 0)) {
-          // set speed colours if we haven't done it yet
-          this.setSpeedColours();
-        }
-        rg2.ctx.lineWidth = rg2.options.routeWidth;
-        rg2.ctx.strokeStyle = this.trackColour;
-        rg2.ctx.globalAlpha = rg2.options.routeIntensity;
-        rg2.ctx.fillStyle = this.trackColour;
-        rg2.ctx.font = '10pt Arial';
-        rg2.ctx.textAlign = "left";
-        rg2.ctx.beginPath();
-        rg2.ctx.moveTo(this.trackx[0], this.tracky[0]);
-        oldx = this.trackx[0];
-        oldy = this.tracky[0];
-        stopCount = 0;
-        l = this.trackx.length;
-        for (i = 1; i < l; i += 1) {
-          // lines
-          rg2.ctx.lineTo(this.trackx[i], this.tracky[i]);
-          if ((this.trackx[i] === oldx) && (this.tracky[i] === oldy)) {
-            // we haven't moved
-            stopCount += 1;
-          } else {
-            // we have started moving again
-            if (stopCount > 0) {
-              if (!this.isGPSTrack || (this.isGPSTrack && rg2.options.showThreeSeconds)) {
-                rg2.ctx.fillText("+" + (3 * stopCount), oldx + 5, oldy + 5);
-              }
-              stopCount = 0;
+    drawTrack: function (filter) {
+      // lots of scope for problems drawing incomplete results so just trap and move one
+      try {
+        let oldx, oldy, stopCount;
+        if (this.displayTrack) {
+          if (this.isGPSTrack && rg2.options.showGPSSpeed && (this.speedColour.length === 0)) {
+            // set speed colours if we haven't done it yet
+            this.setSpeedColours();
+          }
+          let startIndex = 0;
+          let endIndex = this.xysecs.length;
+          let fromSplit = this.splits[filter.filterFrom];
+          let toSplit = this.splits[filter.filterTo];
+          for (let f = 0; f < this.xysecs.length; f += 1) {
+            if (this.xysecs[f] < fromSplit) {
+              startIndex = f;
+            }
+            if (this.xysecs[f] <= toSplit) {
+              endIndex = f;
             }
           }
-          oldx = this.trackx[i];
-          oldy = this.tracky[i];
-          if (this.isGPSTrack && rg2.options.showGPSSpeed) {
-            // draw partial track since we need to keep changing colour
-            rg2.ctx.strokeStyle = this.speedColour[i];
-            rg2.ctx.stroke();
-            rg2.ctx.beginPath();
-            rg2.ctx.moveTo(oldx, oldy);
+          rg2.ctx.lineWidth = rg2.options.routeWidth;
+          rg2.ctx.strokeStyle = this.trackColour;
+          rg2.ctx.globalAlpha = rg2.options.routeIntensity;
+          rg2.ctx.fillStyle = this.trackColour;
+          rg2.ctx.font = '10pt Arial';
+          rg2.ctx.textAlign = "left";
+          rg2.ctx.beginPath();
+          rg2.ctx.moveTo(this.trackx[startIndex], this.tracky[startIndex]);
+          oldx = this.trackx[startIndex];
+          oldy = this.tracky[startIndex];
+          stopCount = 0;
+          for (let i = startIndex + 1; i <= endIndex; i += 1) {
+            // lines
+            rg2.ctx.lineTo(this.trackx[i], this.tracky[i]);
+            if ((this.trackx[i] === oldx) && (this.tracky[i] === oldy)) {
+              // we haven't moved
+              stopCount += 1;
+            } else {
+              // we have started moving again
+              if (stopCount > 0) {
+                if (!this.isGPSTrack || (this.isGPSTrack && rg2.options.showThreeSeconds)) {
+                  rg2.ctx.fillText("+" + (3 * stopCount), oldx + 5, oldy + 5);
+                }
+                stopCount = 0;
+              }
+            }
+            oldx = this.trackx[i];
+            oldy = this.tracky[i];
+            if (this.isGPSTrack && rg2.options.showGPSSpeed) {
+              // draw partial track since we need to keep changing colour
+              rg2.ctx.strokeStyle = this.speedColour[i];
+              rg2.ctx.stroke();
+              rg2.ctx.beginPath();
+              rg2.ctx.moveTo(oldx, oldy);
+            }
           }
+          rg2.ctx.stroke();
         }
-        rg2.ctx.stroke();
+      } catch (e) {
+        console.log("Problem drawing track for result ID " + this.resultid);
+        return;
       }
     },
 
@@ -186,18 +207,19 @@
       // based on drawCourse in course.js
       // could refactor in future...
       // > 1 since we need at least a start and finish to draw something
-      var angle, i, opt;
       if ((this.displayScoreCourse) && (this.scorex.length > 1)) {
-        opt = rg2.getOverprintDetails();
+        const opt = rg2.getOverprintDetails();
         rg2.ctx.globalAlpha = rg2.config.FULL_INTENSITY;
-        angle = rg2.utils.getAngle(this.scorex[0], this.scorey[0], this.scorex[1], this.scorey[1]);
+        let angle = rg2.utils.getAngle(this.scorex[0], this.scorey[0], this.scorex[1], this.scorey[1]);
         rg2.controls.drawStart(this.scorex[0], this.scorey[0], "", angle, opt);
         angle = [];
-        for (i = 0; i < (this.scorex.length - 1); i += 1) {
+        for (let i = 0; i < (this.scorex.length - 1); i += 1) {
           angle[i] = rg2.utils.getAngle(this.scorex[i], this.scorey[i], this.scorex[i + 1], this.scorey[i + 1]);
         }
-        rg2.courses.drawLinesBetweenControls({ x: this.scorex, y: this.scorey }, angle, this.courseid, opt);
-        for (i = 1; i < (this.scorex.length - 1); i += 1) {
+        // draw all controls for a score course: too complicated to filter individuals
+        const filter = {from: 0, to: this.scorex.length};
+        rg2.courses.drawLinesBetweenControls({ x: this.scorex, y: this.scorey }, angle, this.courseid, opt, filter);
+        for (let i = 1; i < (this.scorex.length - 1); i += 1) {
           rg2.controls.drawSingleControl(this.scorex[i], this.scorey[i], i, Math.PI * 0.25, opt);
         }
         rg2.controls.drawFinish(this.scorex[this.scorex.length - 1], this.scorey[this.scorey.length - 1], "", opt);

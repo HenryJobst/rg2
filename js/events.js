@@ -24,6 +24,7 @@
       info = this.events[realid];
       info.id = realid;
       info.controls = rg2.controls.getControlCount();
+      info.exclude = rg2.courses.getExcludedText();
       return info;
     },
 
@@ -166,7 +167,16 @@
       }
       return html;
 
-    }
+    },
+
+    mapIDIsInUse : function (mapID) {
+      for (let i = 0; i < this.events.length; i += 1) {
+        if (this.events[i].mapid === mapID) {
+          return true;
+        }
+      }
+      return false;
+    },
   };
   rg2.Events = Events;
 }());

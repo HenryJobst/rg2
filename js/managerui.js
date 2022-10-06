@@ -14,7 +14,7 @@
 
     initialiseUI : function () {
       var items;
-      items = ["#rg2-animation-controls", "#rg2-create-tab", "#rg2-edit-tab", "#rg2-map-tab", "#rg2-draw-tab", "#rg2-results-tab", "#rg2-courses-tab", "#rg2-events-tab"];
+      items = ["#rg2-animation-controls", "#rg2-create-tab", "#rg2-edit-tab", "#rg2-map-tab", "#rg2-delete-map-tab", "#rg2-draw-tab", "#rg2-results-tab", "#rg2-courses-tab", "#rg2-events-tab"];
       this.showItems(items, false);
       $("#rg2-manage-login").show();
       $("#rg2-info-panel").tabs("disable", rg2.config.TAB_EVENTS).tabs("option", "active", rg2.config.TAB_LOGIN);
@@ -24,7 +24,7 @@
       var items;
       items = ["#rg2-draw-courses", "#rg2-manage-login", "#rg2-login-tab", "#rg2-enrich-course-names"];
       this.showItems(items, false);
-      items = ["#rg2-manage-create", "#rg2-create-tab", "#rg2-edit-tab", "#rg2-map-tab"];
+      items = ["#rg2-manage-create", "#rg2-create-tab", "#rg2-edit-tab", "#rg2-map-tab", "#rg2-delete-map-tab"];
       this.showItems(items, true);
       $("#rg2-event-date-edit").datepicker({
         dateFormat : 'yy-mm-dd'
@@ -122,6 +122,7 @@
         $("#rg2-event-date-edit").val("");
         $("#rg2-event-level-edit").val("");
         $("#rg2-edit-event-comments").val("");
+        $("#rg2-edit-exclude").val("e.g. 1|1|6,60|15,60");
         $("#rg2-route-selected").empty();
         $("#chk-edit-read-only").prop("checked", false);
       }
@@ -134,6 +135,12 @@
       $("#rg2-event-date-edit").empty().val(event.date);
       $("#rg2-event-level-edit").val(event.rawtype);
       $("#rg2-edit-event-comments").empty().val(rg2.he.decode(event.comment));
+      if (rg2.events.isScoreEvent()) {
+        $("#rg2-exclude-info").hide();
+      } else {
+        $("#rg2-edit-exclude").val(event.exclude);
+        $("#rg2-exclude-info").show();
+      }
       $("#chk-edit-read-only").prop("checked", event.locked);
       rg2.utils.setButtonState("enable", ["#btn-delete-event", "#btn-update-event", "#btn-delete-route"]);
       this.createRouteDeleteDropdown(event.id);
@@ -157,6 +164,27 @@
 
     doCancelAddMap : function () {
       $("#add-map-dialog").dialog("destroy");
+    },
+
+    doCancelDeleteUnusedMaps : function () {
+      $("#unused-maps-delete-dialog").dialog("destroy");
+    },
+
+    displayUnusedMaps: function (maps) {
+      let unused = "";
+      const header = "<div class='title'>ID</div><div class='title'>Name</div><div><i class='deleteroute fa fa-trash'></i></div>";
+      if (maps.length === 0) {
+        unused = "<div></div><div>None found.</div><div></div>";
+        $("#btn-delete-unused-maps").button("disable");
+      } else {
+        for (let i = 0; i < maps.length; i += 1) {
+          unused += "<div>" + maps[i].mapid + "</div>";
+          unused += "<div>" + maps[i].name + "</div>";
+          unused += "<div><input class='unused-map' type='checkbox' value=" + maps[i].mapid + "></div>";
+        }
+        $("#btn-delete-unused-maps").button("enable");
+      }
+      $("#rg2-unused-maps").empty().append(header + unused);
     }
   };
   rg2.managerUI = managerUI;

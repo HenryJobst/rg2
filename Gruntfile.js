@@ -37,7 +37,7 @@ module.exports = function (grunt) {
       rel: {
         files: [
           {
-            src: ["rg2api.php", "index.php", "app/**", "html/**", "img/favicon.ico", "img/manifest.json"],
+            src: ["rg2api.php", "index.php", "app/**", "html/**"],
             dest: "rel/",
           },
         ],
@@ -47,8 +47,6 @@ module.exports = function (grunt) {
         updateAndDelete: true,
       },
     },
-
-    bumpup: "package.json",
 
     replace: {
       jsversion: {
@@ -119,8 +117,7 @@ module.exports = function (grunt) {
 
   grunt.registerTask("default", ["build"]);
 
-  // increment minor version number: do anything else by editting package.json by hand
-  grunt.registerTask("bump", ["bumpup"]);
+  // bumpup removed: all version number updates done by editting package.json by hand
 
   grunt.registerTask("build", ["clean:minified", "postcss", "uglify", "build-manager"]);
 
@@ -144,6 +141,7 @@ var jsFileList = [
   "js/gpstrack.js",
   "js/handles.js",
   "js/map.js",
+  "js/overlay.js",
   "js/plugins.js",
   "js/result.js",
   "js/results.js",
@@ -190,7 +188,9 @@ var clubs = [
   "cvfr",
   "darkandwhite",
   "dee",
+  "dfok",
   "devonoc",
+  "dvo",
   "ebor",
   "ecko",
   "elo",
@@ -198,6 +198,7 @@ var clubs = [
   "eryri",
   "esoc",
   "euoc",
+  "explorerevents",
   "gmoa",
   "gramp",
   "go",
@@ -226,6 +227,7 @@ var clubs = [
   "nato",
   "ngoc",
   "noroc",
+  "nn",
   "nwo",
   "od",
   "omm",
@@ -244,7 +246,7 @@ var clubs = [
   "sboc",
   "scottish6days",
   "seloc",
-  "sl_2020",
+  "sl-2020",
   "slow",
   "slmm",
   "smbo",
@@ -269,6 +271,7 @@ var clubs = [
   "tvoc",
   "walton",
   "waoc",
+  "waroc",
   "wcoc",
   "wim",
   "wmoc",

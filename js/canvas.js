@@ -57,6 +57,7 @@
         } else {
           rg2.courses.drawCourses(rg2.config.DIM);
           rg2.results.drawTracks();
+          rg2.overlay.drawOverlays();
           rg2.controls.drawControls(false);
           if (fromTimer) {
             rg2.animation.incrementAnimationTime();
@@ -160,14 +161,16 @@
   }
 
   function zoom(zoomDirection) {
-    var pt, factor, tempZoom;
-    factor = Math.pow(rg2.input.scaleFactor, zoomDirection);
-    tempZoom = rg2.input.zoomSize * factor;
+    if ((!rg2.config.managing) && (rg2.events.getActiveEventID() === null)) {
+      return;
+    }
+    const factor = Math.pow(rg2.input.scaleFactor, zoomDirection);
+    const tempZoom = rg2.input.zoomSize * factor;
     // limit zoom to avoid things disappearing
     // chosen values seem reasonable after some quick tests
     if ((tempZoom < 50) && (tempZoom > 0.05)) {
       rg2.input.zoomSize = tempZoom;
-      pt = ctx.transformedPoint(rg2.input.lastX, rg2.input.lastY);
+      const pt = ctx.transformedPoint(rg2.input.lastX, rg2.input.lastY);
       ctx.translate(pt.x, pt.y);
       ctx.scale(factor, factor);
       ctx.translate(-pt.x, -pt.y);
@@ -258,6 +261,7 @@
   function mapLoadedCallback() {
     $("#rg2-map-load-progress").hide();
     resetMapState();
+    rg2.overlay.mapLoaded();
     if (rg2.config.managing) {
       rg2.manager.mapLoadCallback();
     }

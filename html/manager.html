@@ -85,9 +85,16 @@
     <div id="rg2-edit-event-level" class="manage-event-edit-div">
       <span>Level:<select class="pushright manage-event-edit-form" id="rg2-event-level-edit"></select></span>
     </div>
+    <span>Comments:</span>
     <textarea id="rg2-edit-event-comments"></textarea>
-    <div>
-      <span>Read-only<input type="checkbox" id="chk-edit-read-only"></span>
+    <div id="rg2-exclude-info">
+      <span>Excluded controls (1 Zero splits, 2 Actual splits)
+        course|type|control,time
+      </span>
+      <textarea id="rg2-edit-exclude">e.g. 1|1|6,60|15,60</textarea>
+      <div>
+        <span>Read-only<input type="checkbox" id="chk-edit-read-only"></span>
+      </div>
     </div>
     <button type="button" class="manage-file-label" id="btn-update-event">Update event details</button>
     </div>
@@ -133,6 +140,13 @@
   <hr class="rg2-hr">
   <div id="rg2-add-map">
     <button type="button" id="btn-add-map">Add map</button>
+  </div>
+</div>
+<div id="rg2-delete-map">
+  <h3 class="no-top-margin">Unused maps</h3>
+  <div id="rg2-unused-maps" class="rg2-unused-map-table"></div>
+  <div id="rg2-delete-unused-maps">
+    <button type="button" id="btn-delete-unused-maps">Delete selected maps</button>
   </div>
 </div>
 <div id="rg2-manage-courses"></div>
